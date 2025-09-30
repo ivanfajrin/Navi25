@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🐸 Katak Lompat - Hitungan Daun</title>
+  <!-- Bootstrap CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f0fdf4; }
+    .frog-hop { transition: transform 0.6s cubic-bezier(0.55, -0.2, 0.4, 1.3); }
+    .leaf-label-bg {
+      paint-order: stroke;
+      stroke: #000;
+      stroke-width: 2px;
+    }
+  </style>
+</head>
+<body class="p-4">
+  <div class="container">
+    <h1 class="text-success fw-bold mb-4">🐸 Katak Lompat — Hitungan Daun</h1>
+
+    <!-- Input Panel -->
+    <div class="row g-2 align-items-center mb-4">
+      <div class="col-auto">
+        <label class="form-label">Angka A</label>
+        <input id="a" type="number" value="2" class="form-control">
+      </div>
+      <div class="col-auto">
+        <label class="form-label">Operator</label>
+        <select id="op" class="form-select">
+          <option value="+">+</option>
+          <option value="-">-</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <label class="form-label">Angka B</label>
+        <input id="b" type="number" value="3" class="form-control">
+      </div>
+      <div class="col-auto d-flex gap-2 mt-4">
+        <button id="play" class="btn btn-success">Play</button>
+        <button id="reset" class="btn btn-secondary">Reset</button>
+      </div>
+    </div>
+
+    <!-- Board -->
+    <div class="bg-white rounded shadow p-3 mb-3">
+      <svg id="board" viewBox="0 0 900 250" preserveAspectRatio="xMidYMid meet" class="w-100" style="height:280px">
+        <defs>
+          <linearGradient id="leafGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#4ade80" />
+            <stop offset="100%" stop-color="#15803d" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+
+    <!-- Hasil -->
+    <div class="fs-4">Operasi: 
+      <span id="calcText" class="fw-bold text-success">2 + 3 = 5</span>
+    </div>
+  </div>
+
+  <script>
+    const svg = document.getElementById('board')
+    const aInput = document.getElementById('a')
+    const bInput = document.getElementById('b')
+    const opInput = document.getElementById('op')
+    const playBtn = document.getElementById('play')
+    const resetBtn = document.getElementById('reset')
+    const calcText = document.getElementById('calcText')
+
+    let frog = null
+    let leafPositions = []
+
+    function buildBoard(minVal, maxVal){
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="leafGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#4ade80" />
+            <stop offset="100%" stop-color="#15803d" />
+          </linearGradient>
+        </defs>`
+      leafPositions = []
+
+      const axisY = 150
+      const width = 860
+      const margin = {left:40,right:40}
+      const span = maxVal - minVal || 1
+      const usable = width - margin.left - margin.right
+
+      function xFor(n){
+        return margin.left + (n - minVal) / span * usable
+      }
+
+      // Axis
+      const axis = document.createElementNS('http://www.w3.org/2000/svg','line')
+      axis.setAttribute('x1', xFor(minVal))
+      axis.setAttribute('x2', xFor(maxVal))
+      axis.setAttribute('y1', axisY)
+      axis.setAttribute('y2', axisY)
+      axis.setAttribute('stroke', '#333')
+      axis.setAttribute('stroke-width', '2')
+      svg.appendChild(axis)
+
+      // Leaves
+      for(let n = minVal; n <= maxVal; n++){
+        const x = xFor(n)
+        leafPositions.push({n,x})
+
+        // Bentuk daun sederhana (oval runcing)
+        const leafPath = document.createElementNS('http://www.w3.org/2000/svg','ellipse')
+        leafPath.setAttribute('cx', x)
+        leafPath.setAttribute('cy', axisY+40)
+        leafPath.setAttribute('rx', 40)
+        leafPath.setAttribute('ry', 25)
+        leafPath.setAttribute('fill','url(#leafGradient)')
+        leafPath.setAttribute('stroke','#166534')
+        leafPath.setAttribute('stroke-width','2')
+        svg.appendChild(leafPath)
+
+        // Label angka kontras
+        const lbl = document.createElementNS('http://www.w3.org/2000/svg','text')
+        lbl.setAttribute('x', x)
+        lbl.setAttribute('y', axisY+48)
+        lbl.setAttribute('text-anchor','middle')
+        lbl.setAttribute('font-size','22')
+        lbl.setAttribute('font-weight','bold')
+        lbl.setAttribute('fill','#fff')
+        lbl.setAttribute('stroke','#000')
+        lbl.setAttribute('stroke-width','2')
+        lbl.textContent = n
+        svg.appendChild(lbl)
+      }
+
+      // Frog
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g')
+      g.setAttribute('id','frog')
+      g.classList.add('frog-hop')
+      svg.appendChild(g)
+
+      const frogText = document.createElementNS('http://www.w3.org/2000/svg','text')
+      frogText.setAttribute('x',0)
+      frogText.setAttribute('y',10)
+      frogText.setAttribute('text-anchor','middle')
+      frogText.setAttribute('font-size','36')
+      frogText.textContent = '🐸'
+      g.appendChild(frogText)
+
+      frog = g
+    }
+
+    function setFrogAt(n, bounce=false){
+      const pos = leafPositions.find(p => p.n === n)
+      if(!pos) return
+      const yBase = 110
+      const yJump = bounce ? 70 : yBase
+      frog.setAttribute('transform', `translate(${pos.x}, ${yJump})`)
+      if(bounce){
+        setTimeout(()=> frog.setAttribute('transform', `translate(${pos.x}, ${yBase})`), 300)
+      }
+    }
+
+    function updateCalcText(){
+      const a = Number(aInput.value)
+      const b = Number(bInput.value)
+      const op = opInput.value
+      const res = (op === '+') ? (a + b) : (a - b)
+      calcText.textContent = `${a} ${op} ${b} = ${res}`
+    }
+
+    function playAnimation(){
+      const a = Number(aInput.value)
+      const b = Number(bInput.value)
+      const op = opInput.value
+      const start = a
+      const target = (op === '+') ? (a + b) : (a - b)
+      updateCalcText()
+
+      const minVal = Math.min(start, target)
+      const maxVal = Math.max(start, target)
+      buildBoard(minVal, maxVal)
+      setFrogAt(start)
+
+      const path = []
+      if(start === target){
+        path.push(start)
+      } else {
+        const step = (target > start) ? 1 : -1
+        for(let x = start; x !== target + step; x += step){
+          path.push(x)
+        }
+      }
+
+      let i = 0
+      const hopDuration = 600
+
+      function hopTo(index){
+        if(index >= path.length) return
+        const val = path[index]
+        setFrogAt(val, true)
+        setTimeout(()=> hopTo(index+1), hopDuration)
+      }
+
+      hopTo(0)
+    }
+
+    aInput.addEventListener('input', updateCalcText)
+    bInput.addEventListener('input', updateCalcText)
+    opInput.addEventListener('change', updateCalcText)
+
+    playBtn.addEventListener('click', playAnimation)
+    resetBtn.addEventListener('click', ()=>{
+      aInput.value = 0; bInput.value = 0; opInput.value = '+'; updateCalcText();
+      buildBoard(0,0); setFrogAt(0)
+    })
+
+    buildBoard(2,5)
+    updateCalcText()
+    setFrogAt(Number(aInput.value))
+  </script>
+</body>
+</html>
