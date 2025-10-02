@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FPB Kantung Buah Mode Slider & Bebas</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {background:linear-gradient(180deg,#fffaf0,#f0fbff)}
+    .box, .bag {
+      border:2px dashed #555;
+      border-radius:12px;
+      padding:10px;
+      margin:10px;
+      min-height:80px;
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      align-items:center;
+      font-size:22px;
+      background:#fff;
+    }
+    .bag-label {
+      font-weight:bold;
+      width:100%;
+      text-align:center;
+      margin-bottom:4px;
+    }
+    .emoji {
+      margin:2px;
+      display:inline-block;
+      transition:transform 0.8s ease;
+    }
+    .moving {transform:translateY(-40px);}
+    .info-box {
+      border:2px solid #007bff;
+      border-radius:10px;
+      padding:10px;
+      margin-bottom:20px;
+      background:#e9f5ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-4">
+    <div class="text-center mb-4">
+      <h3>Analogi FPB dengan Animasi Kantung Buah</h3>
+      <div class="info-box">
+        <strong>Keterangan:</strong> 🍎 mewakili bilangan pertama, 🍊 mewakili bilangan kedua, dan seterusnya.
+      </div>
+    </div>
+
+    <!-- Pilihan Mode -->
+    <div class="mb-3 text-center">
+      <div class="btn-group">
+        <button class="btn btn-outline-primary active" id="modeSliderBtn">Mode Slider (2 bilangan)</button>
+        <button class="btn btn-outline-secondary" id="modeBebasBtn">Mode Bebas (n bilangan)</button>
+      </div>
+    </div>
+
+    <!-- Mode Slider -->
+    <div id="modeSlider">
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <label class="form-label">Bilangan A (🍎): <span id="valA">12</span></label>
+          <input id="inputA" type="range" min="1" max="20" value="12" class="form-range">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Bilangan B (🍊): <span id="valB">18</span></label>
+          <input id="inputB" type="range" min="1" max="20" value="18" class="form-range">
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode Bebas -->
+    <div id="modeBebas" style="display:none">
+      <div id="inputGroup"></div>
+      <div class="text-center mb-3">
+        <button class="btn btn-sm btn-outline-success" id="btnTambah">+ Tambah Buah</button>
+      </div>
+    </div>
+
+    <!-- Kotak awal -->
+    <div class="text-center mb-3">
+      <div id="boxAwal" class="box d-inline-block"></div>
+      <p><em>Kotak Buah Awal</em></p>
+    </div>
+
+    <!-- Kantung FPB -->
+    <div id="bags" class="d-flex flex-wrap justify-content-center"></div>
+
+    <!-- Pembahasan -->
+    <div class="text-center mt-3">
+      <p class="fs-5"><strong>FPB = <span id="gcdResult">6</span> kantung</strong></p>
+      <button class="btn btn-success" id="btnAnimasi">Mulai Animasi</button>
+    </div>
+
+    <div class="mt-3">
+      <div class="card card-body">
+        <p id="pembahasanText" class="mb-0"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){let t=a%b;a=b;b=t;}return a;}
+    function gcdArray(arr){return arr.reduce((x,y)=>gcd(x,y));}
+    function clear(el){while(el.firstChild)el.removeChild(el.firstChild);}
+
+    const inputA=document.getElementById('inputA');
+    const inputB=document.getElementById('inputB');
+    const valA=document.getElementById('valA');
+    const valB=document.getElementById('valB');
+    const gcdResult=document.getElementById('gcdResult');
+    const boxAwal=document.getElementById('boxAwal');
+    const bags=document.getElementById('bags');
+    const pembahasanText=document.getElementById('pembahasanText');
+    const btnAnimasi=document.getElementById('btnAnimasi');
+
+    const modeSlider=document.getElementById('modeSlider');
+    const modeBebas=document.getElementById('modeBebas');
+    const modeSliderBtn=document.getElementById('modeSliderBtn');
+    const modeBebasBtn=document.getElementById('modeBebasBtn');
+    const inputGroup=document.getElementById('inputGroup');
+    const btnTambah=document.getElementById('btnTambah');
+
+    const buahIcons=['🍎','🍊','🍌','🍇','🍉','🍍','🥭','🍐','🍓','🥝'];
+    let numbers=[12,18]; // default
+    let mode="slider";
+
+    function update(){
+      clear(boxAwal); clear(bags);
+      const g=gcdArray(numbers);
+      gcdResult.textContent=g;
+
+      // isi box awal
+      numbers.forEach((n,idx)=>{
+        for(let i=0;i<n;i++){
+          const e=document.createElement('span');
+          e.className='emoji';
+          e.textContent=buahIcons[idx % buahIcons.length];
+          boxAwal.appendChild(e);
+        }
+      });
+
+      // buat kantung kosong
+      for(let i=0;i<g;i++){
+        const wrap=document.createElement('div');
+        wrap.className='bag col-md-3 col-sm-5';
+        const label=document.createElement('div');
+        label.className='bag-label';
+        label.textContent=`Kantung ${i+1}`;
+        wrap.appendChild(label);
+        bags.appendChild(wrap);
+      }
+
+      pembahasanText.textContent="";
+    }
+
+    function mulaiAnimasi(){
+      pembahasanText.textContent="";
+      const g=gcdArray(numbers);
+      const semuaBuah=[...boxAwal.querySelectorAll('.emoji')];
+      const kantungs=[...bags.querySelectorAll('.bag')];
+
+      // tulis pembahasan step
+      let delay=500;
+      numbers.forEach((n,i)=>{
+        setTimeout(()=>{
+          pembahasanText.innerHTML+=`<div>Bilangan ${i+1} = ${n} ${buahIcons[i]}</div>`;
+        },delay); delay+=1500;
+      });
+      setTimeout(()=>{pembahasanText.innerHTML+=`<div>FPB = ${g}</div>`;},delay); delay+=1500;
+
+      // animasi pindah buah
+      semuaBuah.forEach((buah,i)=>{
+        setTimeout(()=>{
+          const target=kantungs[i % g];
+          buah.classList.add('moving');
+          setTimeout(()=>{
+            target.appendChild(buah);
+            buah.classList.remove('moving');
+          },800);
+        },800*i);
+      });
+    }
+
+    // slider mode
+    inputA.addEventListener('input',()=>{
+      valA.textContent=inputA.value;
+      numbers[0]=parseInt(inputA.value); update();
+    });
+    inputB.addEventListener('input',()=>{
+      valB.textContent=inputB.value;
+      numbers[1]=parseInt(inputB.value); update();
+    });
+
+    // mode toggle
+    modeSliderBtn.addEventListener('click',()=>{
+      mode="slider";
+      modeSlider.style.display="block";
+      modeBebas.style.display="none";
+      modeSliderBtn.classList.add('active');
+      modeBebasBtn.classList.remove('active');
+      numbers=[parseInt(inputA.value),parseInt(inputB.value)];
+      update();
+    });
+    modeBebasBtn.addEventListener('click',()=>{
+      mode="bebas";
+      modeSlider.style.display="none";
+      modeBebas.style.display="block";
+      modeSliderBtn.classList.remove('active');
+      modeBebasBtn.classList.add('active');
+      numbers=[12,18];
+      renderInputs();
+      update();
+    });
+
+    function renderInputs(){
+      clear(inputGroup);
+      numbers.forEach((n,i)=>{
+        const div=document.createElement('div');
+        div.className="mb-2";
+        div.innerHTML=`
+          <label>Bilangan ${i+1} (${buahIcons[i]}):</label>
+          <input type="number" min="1" value="${n}" class="form-control form-control-sm bilanganInput" data-idx="${i}">
+        `;
+        inputGroup.appendChild(div);
+      });
+
+      inputGroup.querySelectorAll('.bilanganInput').forEach(inp=>{
+        inp.addEventListener('input',(e)=>{
+          const idx=parseInt(e.target.dataset.idx);
+          numbers[idx]=parseInt(e.target.value)||1;
+          update();
+        });
+      });
+    }
+
+    btnTambah.addEventListener('click',()=>{
+      numbers.push(6);
+      renderInputs();
+      update();
+    });
+
+    btnAnimasi.addEventListener('click',mulaiAnimasi);
+
+    update();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
