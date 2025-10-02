@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>🐵 Lintasan KPK Monyet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .monkey { font-size: 2rem; transition: transform 0.4s ease; }
+    .tree { font-size: 2rem; }
+    .highlight { background-color: rgba(255, 223, 99, 0.5); border-radius: 0.5rem; }
+    .track-wrapper {
+      transform-origin: top left; 
+      transition: transform 0.4s ease;
+    }
+  </style>
+</head>
+<body class="bg-green-50 min-h-screen flex flex-col items-center p-6">
+  <h1 class="text-2xl font-bold text-green-800 mb-4">🐵 Lintasan KPK sinpanse</h1>
+
+  <!-- Input -->
+  <div class="flex gap-3 mb-6">
+    <label class="flex items-center gap-2">
+      Nilai A:
+      <input id="a" type="number" value="2" class="border rounded px-2 py-1 w-20">
+    </label>
+    <label class="flex items-center gap-2">
+      Nilai B:
+      <input id="b" type="number" value="3" class="border rounded px-2 py-1 w-20">
+    </label>
+    <label class="flex items-center gap-2">
+      Nilai C:
+      <input id="c" type="number" value="4" class="border rounded px-2 py-1 w-20">
+    </label>
+    <button id="start" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+      Mulai
+    </button>
+  </div>
+
+  <!-- Box -->
+  <div id="box" class="border-4 border-green-700 rounded-lg bg-white p-4 shadow-lg w-full max-w-full overflow-hidden">
+    <!-- Lintasan via JS -->
+  </div>
+
+  <script>
+    const box = document.getElementById("box");
+    const startBtn = document.getElementById("start");
+    const aInput = document.getElementById("a");
+    const bInput = document.getElementById("b");
+    const cInput = document.getElementById("c");
+
+    function gcd(x, y) {
+      return y === 0 ? x : gcd(y, x % y);
+    }
+    function lcm(x, y) {
+      return (x * y) / gcd(x, y);
+    }
+
+    function buildTracks(a, b, c) {
+      box.innerHTML = ""; 
+      const kpk = lcm(lcm(a, b), c);
+      const maxVal = kpk * 2; 
+
+      const monkeys = ["🐵", "🙈", "🙊"];
+      const steps = [a, b, c];
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "track-wrapper space-y-6";
+      box.appendChild(wrapper);
+
+      // hitung panjang ideal
+      const treeWidth = 60; 
+      const trackLength = (maxVal + 1) * treeWidth;
+      const boxWidth = box.clientWidth - 40;
+      const scale = Math.min(1, boxWidth / trackLength);
+
+      wrapper.style.transform = `scale(${scale})`;
+
+      // Buat lintasan monyet
+      monkeys.forEach((m, idx) => {
+        const track = document.createElement("div");
+        track.className = "flex items-end gap-4 track";
+
+        for (let n = 0; n <= maxVal; n++) {
+          const treeBox = document.createElement("div");
+          treeBox.className = "flex flex-col items-center min-w-[60px]";
+
+          const monkey = document.createElement("div");
+          monkey.className = "monkey opacity-0";
+          monkey.textContent = (n % steps[idx] === 0 && n !== 0) ? m : "";
+
+          const tree = document.createElement("div");
+          tree.className = "tree";
+          tree.textContent = "🌳";
+
+          const num = document.createElement("div");
+          num.className = "text-sm font-bold text-gray-700";
+          num.textContent = n;
+
+          treeBox.appendChild(monkey);
+          treeBox.appendChild(tree);
+          treeBox.appendChild(num);
+
+          if (n % steps[idx] === 0 && n !== 0) {
+            setTimeout(() => {
+              monkey.style.opacity = 1;
+              monkey.style.transform = "translateY(-10px)";
+              setTimeout(() => (monkey.style.transform = "translateY(0)"), 400);
+            }, 200 * n);
+          }
+
+          track.appendChild(treeBox);
+        }
+        wrapper.appendChild(track);
+      });
+
+      // Lintasan keempat (indikator KPK)
+      const meetTrack = document.createElement("div");
+      meetTrack.className = "flex items-end gap-4 track border-t-2 border-green-400 pt-2";
+
+      for (let n = 0; n <= maxVal; n++) {
+        const treeBox = document.createElement("div");
+        treeBox.className = "flex flex-col items-center min-w-[60px]";
+
+        const stack = document.createElement("div");
+        stack.className = "flex justify-center gap-1";
+
+        if (n % kpk === 0 && n !== 0) {
+          stack.innerHTML = "⭐"; 
+          treeBox.classList.add("highlight");
+        }
+
+        const tree = document.createElement("div");
+        tree.className = "tree";
+        tree.textContent = "🌳";
+
+        const num = document.createElement("div");
+        num.className = "text-sm font-bold text-gray-700";
+        num.textContent = n;
+
+        treeBox.appendChild(stack);
+        treeBox.appendChild(tree);
+        treeBox.appendChild(num);
+        meetTrack.appendChild(treeBox);
+      }
+      wrapper.appendChild(meetTrack);
+    }
+
+    startBtn.addEventListener("click", () => {
+      const a = parseInt(aInput.value) || 2;
+      const b = parseInt(bInput.value) || 3;
+      const c = parseInt(cInput.value) || 4;
+      buildTracks(a, b, c);
+    });
+
+    // init
+    buildTracks(2, 3, 4);
+  </script>
+</body>
+</html>
