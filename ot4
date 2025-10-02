@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pohon Faktor Interaktif</title>
+  <style>
+    :root {
+      --bg: #0f172a; /* slate-900 */
+      --panel: #111827ee; /* gray-900 */
+      --muted: #94a3b8; /* slate-400 */
+      --text: #e5e7eb; /* gray-200 */
+      --accent: #22d3ee; /* cyan-400 */
+      --ring: #38bdf8; /* sky-400 */
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 70% -10%, #1f2937, var(--bg));
+      color: var(--text);
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    header { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    h1 { font-size: clamp(22px, 2.4vw, 30px); margin: 0; letter-spacing: .3px; }
+    .card { background: var(--panel); border: 1px solid #1f2937; box-shadow: 0 10px 30px rgba(0,0,0,.35); border-radius: 16px; overflow: hidden; }
+    .controls { display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; padding: 16px; align-items: center; }
+    .row { display: contents; }
+    input[type="number"], input[type="text"] {
+      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid #27324a; background: #0b1220; color: var(--text);
+      outline: none; transition: box-shadow .2s, border-color .2s;
+    }
+    input:focus { border-color: var(--ring); box-shadow: 0 0 0 4px rgba(56,189,248,.15); }
+    .btn { padding: 10px 14px; border-radius: 12px; border: 1px solid #1f2937; background: #111827; color: var(--text); cursor: pointer; font-weight: 600; }
+    .btn:hover { filter: brightness(1.1); }
+    .btn.primary { background: linear-gradient(180deg, #22d3ee, #06b6d4); color: #00171f; border: none; }
+    .btn.ghost { background: transparent; border-color: #334155; color: var(--muted); }
+    .tips { padding: 0 16px 16px; color: var(--muted); font-size: 14px; }
+
+    .canvas { height: 70vh; min-height: 420px; background: repeating-linear-gradient(90deg, rgba(148,163,184,.06) 0 1px, transparent 1px 40px),
+                                 repeating-linear-gradient(0deg, rgba(148,163,184,.06) 0 1px, transparent 1px 40px);
+              position: relative; }
+    svg { width: 100%; height: 100%; display: block; }
+    .node circle { fill: #0b1220; stroke: #334155; stroke-width: 2; }
+    .node text { font-weight: 700; font-size: 14px; dominant-baseline: middle; text-anchor: middle;fill: white }
+    .prime circle { stroke: var(--accent); }
+    .edge { stroke: #334155; stroke-width: 2; }
+    .legend { position: absolute; right: 12px; top: 12px; background: #0b1220cc; border: 1px solid #1f2937; border-radius: 10px; padding: 8px 10px; font-size: 12px; color: var(--muted); }
+
+    .samples { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 16px 16px; }
+    .chip { border: 1px solid #334155; color: var(--muted); background: #0b1220; border-radius: 999px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+    .chip:hover { color: var(--text); border-color: var(--ring); }
+
+    footer { margin-top: 14px; color: var(--muted); font-size: 12px; text-align: center; }
+    .err { color: #fecaca; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>🧮 Pohon Faktor Interaktif</h1>
+    </header>
+
+    <div class="card">
+      <div class="controls">
+        <input id="nInput" type="number" min="2" step="1" placeholder="Masukkan bilangan bulat ≥ 2 (contoh: 360)" />
+        <button id="drawBtn" class="btn primary">Gambar Pohon</button>
+        <button id="clearBtn" class="btn">Bersihkan</button>
+        <button id="saveBtn" class="btn ghost" title="Unduh SVG">Unduh SVG</button>
+      </div>
+      <div class="samples">
+        <span>Contoh cepat:</span>
+        <button class="chip" data-n="60">60</button>
+        <button class="chip" data-n="84">84</button>
+        <button class="chip" data-n="96">96</button>
+        <button class="chip" data-n="360">360</button>
+        <button class="chip" data-n="1001">1001</button>
+        <button class="chip" data-n="123456">123456</button>
+      </div>
+      <div class="tips">Masukan negatif/pecahan akan diabaikan. Untuk bilangan sangat besar, proses bisa sedikit lebih lama (uji hingga ±10<sup>12</sup>).</div>
+      <div class="tips err" id="error"></div>
+      <div class="canvas" id="canvas">
+        <div class="legend">Daun = bilangan prima</div>
+        <svg id="svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet" aria-label="Pohon faktor"></svg>
+      </div>
+    </div>
+
+    <footer>
+      Dibuat dengan HTML, CSS, dan JavaScript murni. Tidak perlu library eksternal.
+    </footer>
+  </div>
+
+<script>
+(function(){
+  const $ = (sel) => document.querySelector(sel);
+  const nInput = $('#nInput');
+  const svg = $('#svg');
+  const errorBox = $('#error');
+
+  // Utilitas angka
+  function isInteger(n){ return Number.isInteger(n) && isFinite(n); }
+  function isPrime(n){
+    if(n < 2) return false;
+    if(n % 2 === 0) return n === 2;
+    if(n % 3 === 0) return n === 3;
+    let i = 5, w = 2;
+    while(i * i <= n){
+      if(n % i === 0) return false;
+      i += w; w = 6 - w; // cek 6k±1
+    }
+    return true;
+  }
+  function smallestFactor(n){
+    if(n % 2 === 0) return 2;
+    if(n % 3 === 0) return 3;
+    let i = 5, w = 2;
+    while(i * i <= n){
+      if(n % i === 0) return i;
+      i += w; w = 6 - w;
+    }
+    return n; // prima
+  }
+
+  // Bangun struktur pohon biner: setiap simpul memecah n menjadi faktor terkecil × sisanya
+  function buildTree(n){
+    n = Math.floor(Math.abs(n));
+    if(n < 2 || isPrime(n)) return { value: n, prime: n >= 2, children: [] };
+    const f = smallestFactor(n);
+    const other = n / f;
+    const left = buildTree(f);
+    const right = buildTree(other);
+    return { value: n, prime: false, children: [left, right] };
+  }
+
+  // Hitung ukuran dan posisi tata letak (DFS)
+  function measure(node){
+    if(!node.children.length){
+      node.width = 1; node.height = 1; return node;
+    }
+    node.children.forEach(measure);
+    node.width = node.children.reduce((a,c)=>a + c.width, 0);
+    node.height = 1 + Math.max(...node.children.map(c=>c.height));
+    return node;
+  }
+  function layout(node, x0, y0, xScale, yStep){
+    node.x = x0 + (node.width * xScale) / 2;
+    node.y = y0;
+    let curX = x0;
+    for(const child of node.children){
+      layout(child, curX, y0 + yStep, xScale, yStep);
+      curX += child.width * xScale;
+    }
+  }
+
+  // Gambar ke SVG
+  function clearSVG(){ while(svg.firstChild) svg.removeChild(svg.firstChild); }
+  function edge(x1,y1,x2,y2){
+    const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('class','edge');
+    l.setAttribute('x1',x1); l.setAttribute('y1',y1);
+    l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+    svg.appendChild(l);
+  }
+  function nodeEl(n){
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class', 'node' + (n.prime? ' prime':''));
+
+    const r = 20 + Math.min(18, String(n.value).length * 2);
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', n.x); c.setAttribute('cy', n.y); c.setAttribute('r', r);
+    g.appendChild(c);
+
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x', n.x); t.setAttribute('y', n.y);
+    t.textContent = n.value;
+    g.appendChild(t);
+
+    // Tooltip sederhana
+    g.addEventListener('mouseenter',()=>{ c.setAttribute('stroke-width',3); });
+    g.addEventListener('mouseleave',()=>{ c.setAttribute('stroke-width',2); });
+
+    svg.appendChild(g);
+  }
+
+  function drawTree(n){
+    errorBox.textContent = '';
+    if(!isInteger(n) || n < 2){
+      errorBox.textContent = 'Masukkan bilangan bulat ≥ 2.';
+      return;
+    }
+    const root = measure(buildTree(n));
+
+    // Hitung skala dan ukuran viewBox dinamis
+    const margin = {top: 60, right: 40, bottom: 60, left: 40};
+    const xScaleUnit = 100; // lebar per unit
+    const yStep = 110;      // jarak vertikal per level
+    const width = Math.max(600, root.width * xScaleUnit + margin.left + margin.right);
+    const height = Math.max(320, root.height * yStep + margin.top + margin.bottom);
+
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    clearSVG();
+
+    layout(root, margin.left, margin.top, xScaleUnit, yStep);
+
+    // edges terlebih dulu
+    (function drawEdges(n){
+      for(const c of n.children){
+        edge(n.x, n.y + 22, c.x, c.y - 22);
+        drawEdges(c);
+      }
+    })(root);
+
+    // nodes
+    (function drawNodes(n){
+      nodeEl(n);
+      for(const c of n.children) drawNodes(c);
+    })(root);
+  }
+
+  // Unduh SVG
+  function downloadSVG(){
+    const serializer = new XMLSerializer();
+    const blob = new Blob([serializer.serializeToString(svg)], {type: 'image/svg+xml'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'pohon-faktor.svg';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // Event listeners
+  $('#drawBtn').addEventListener('click', ()=>{
+    const raw = Number(nInput.value);
+    drawTree(raw);
+  });
+  $('#clearBtn').addEventListener('click', ()=>{
+    nInput.value = '';
+    errorBox.textContent = '';
+    clearSVG();
+  });
+  $('#saveBtn').addEventListener('click', downloadSVG);
+
+  // Enter untuk gambar
+  nInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); $('#drawBtn').click(); }
+  });
+
+  // contoh cepat
+  document.querySelectorAll('.chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      nInput.value = chip.dataset.n;
+      $('#drawBtn').click();
+    })
+  });
+
+  // nilai awal
+  nInput.value = 360;
+  drawTree(360);
+})();
+</script>
+</body>
+</html>
