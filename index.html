@@ -1,34 +1,100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Navi25 Homepage</title>
-  <!-- Bootstrap CSS CDN -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Navi25 Project – Tahapan Belajar Anak</title>
+
+  <!-- Bootstrap 5.3.2 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background: linear-gradient(135deg, #f8f9fa, #e8f0ff);
+      min-height: 100vh;
+    }
+    .card {
+      border: none;
+      border-radius: 1.2rem;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+    .list-group-item {
+      transition: transform 0.2s, background-color 0.2s;
+      border: none;
+    }
+    .list-group-item:hover {
+      transform: translateX(6px);
+      background-color: #f1f8ff;
+    }
+    .badge {
+      font-size: 0.8rem;
+    }
+  </style>
 </head>
-<body class="bg-light">
 
+<body>
   <div class="container py-5">
-    <h1 class="text-center mb-4">📂 Navi25 Project</h1>
-    <p class="text-center text-muted">Silakan pilih halaman aplikasi web</p>
+    <div class="text-center mb-5">
+      <h1 class="fw-bold">📘 Navi25 Project</h1>
+      <p class="text-muted">Disusun sesuai tahapan perkembangan belajar anak SD</p>
+    </div>
 
-    <div class="list-group shadow">
-      <a href="index.html" class="list-group-item list-group-item-action">🏠 Homepage</a>
-      <a href="ot1.html" class="list-group-item list-group-item-action">membagi buah dengan FPB</a>
-      <a href="ot2.html" class="list-group-item list-group-item-action">garis bilangan pada katak</a>
-      <a href="ot3.html" class="list-group-item list-group-item-action">akuarium pekalian</a>
-      <a href="oct4.html" class="list-group-item list-group-item-action">lingkaran pecahan</a>
-      <a href="oct5.html" class="list-group-item list-group-item-action">penjumlahan pecahan dengan pizza</a>
-      <a href="ot4.html" class="list-group-item list-group-item-action">pohon pecahan</a>
-      <a href="oct28fpbkpk2.1.html" class="list-group-item list-group-item-action">kpk dan fpb</a>
-      <a href="nov021959.html" class="list-group-item list-group-item-action">keliling dan Luas</a>
-      <a href="pembagian dengan batu.html" class="list-group-item list-group-item-action">Pembagian dengan Batu</a>
-      <a href="ot6.html" class="list-group-item list-group-item-action">sinpanse kpk</a>
+    <div class="card p-3 p-md-4 shadow-lg">
+      <div id="projectList" class="list-group list-group-flush"></div>
     </div>
   </div>
 
-  <!-- Bootstrap JS CDN -->
+  <!-- Bootstrap Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Script Data & DOM Builder -->
+  <script>
+    const projectData = [
+      { level: 1, href: "pembagian dengan batu.html", icon: "🪨", title: "Pembagian dengan Batu", tahap: "Konkret" },
+      { level: 2, href: "ot1.html", icon: "🍎", title: "Membagi Buah dengan FPB", tahap: "Konkret–Semi" },
+      { level: 3, href: "ot2.html", icon: "🐸", title: "Garis Bilangan pada Katak", tahap: "Semi Konkret" },
+      { level: 4, href: "ot3.html", icon: "🐠", title: "Akuarium Perkalian", tahap: "Semi Konkret" },
+      { level: 5, href: "oct4.html", icon: "⭕", title: "Lingkaran Pecahan", tahap: "Semi Konkret" },
+      { level: 6, href: "oct5.html", icon: "🍕", title: "Penjumlahan Pecahan dengan Pizza", tahap: "Semi–Abstrak" },
+      { level: 7, href: "ot4.html", icon: "🌳", title: "Pohon Pecahan", tahap: "Semi–Abstrak" },
+      { level: 8, href: "oct28fpbkpk2.1.html", icon: "🔢", title: "KPK dan FPB", tahap: "Abstrak" },
+      { level: 9, href: "ot6.html", icon: "🐒", title: "Simpanse KPK", tahap: "Abstrak" },
+      { level: 10, href: "nov021959.html", icon: "📏", title: "Keliling dan Luas", tahap: "Abstrak Lanjutan" }
+    ];
+
+    // Warna label tahap
+    const tahapColor = {
+      "Konkret": "success",
+      "Konkret–Semi": "success",
+      "Semi Konkret": "warning",
+      "Semi–Abstrak": "info",
+      "Abstrak": "primary",
+      "Abstrak Lanjutan": "secondary"
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const listContainer = document.getElementById("projectList");
+
+      // Urutkan berdasarkan level
+      const sorted = projectData.sort((a, b) => a.level - b.level);
+
+      sorted.forEach(item => {
+        const a = document.createElement("a");
+        a.href = item.href;
+        a.className = "list-group-item d-flex justify-content-between align-items-center py-3";
+        a.dataset.level = item.level;
+
+        // Isi teks dan badge tahap
+        a.innerHTML = `
+          <span class="fs-5">${item.icon} ${item.title}</span>
+          <span class="badge bg-${tahapColor[item.tahap] || "secondary"} rounded-pill">
+            ${item.tahap}
+          </span>
+        `;
+
+        listContainer.appendChild(a);
+      });
+    });
+  </script>
 </body>
 </html>
