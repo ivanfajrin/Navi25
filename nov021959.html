@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Grid Interaktif - Luas & Keliling</title>
   <style>
-    :root{--gap:2px}
+    :root{--gap:0px}
     body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:16px;background:#f6f8fb;color:#111}
     h1{font-size:20px;margin:0 0 8px}
     .app{display:grid;grid-template-columns:360px 1fr;gap:20px}
@@ -17,7 +17,16 @@
     .btn.secondary{background:#4b5563}
     .grid-wrap{display:flex;flex-direction:column;gap:8px}
     .grid{display:inline-grid;grid-gap:var(--gap);background:transparent;padding:6px;border-radius:8px}
-    .cell{width:28px;height:28px;border-radius:4px;background:white;border:1px solid #d6dbe6;box-sizing:border-box;cursor:pointer}
+    .cell{
+  width:28px;
+  height:28px;
+  border-radius:0;
+  background:white;
+  border:none;
+  box-sizing:border-box;
+  cursor:pointer;
+}
+
     .info{font-size:13px;margin-top:8px}
     .legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
     .swatch{padding:6px 8px;border-radius:6px;border:1px solid #ddd;font-size:12px}
