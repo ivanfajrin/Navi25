@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Grid Interaktif - Luas & Keliling</title>
+  <style>
+    :root{--gap:2px}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:16px;background:#f6f8fb;color:#111}
+    h1{font-size:20px;margin:0 0 8px}
+    .app{display:grid;grid-template-columns:360px 1fr;gap:20px}
+    .panel{background:#fff;border-radius:8px;padding:12px;box-shadow:0 6px 18px rgba(14,30,37,0.06)}
+    .controls label{display:block;margin:8px 0 4px;font-size:13px}
+    .controls input[type=number],.controls input[type=text],.controls select{width:100%;padding:8px;border-radius:6px;border:1px solid #d1d7e0}
+    .row{display:flex;gap:8px}
+    .btn{display:inline-block;padding:8px 10px;border-radius:8px;border:0;background:#0b74ff;color:white;cursor:pointer}
+    .btn.secondary{background:#4b5563}
+    .grid-wrap{display:flex;flex-direction:column;gap:8px}
+    .grid{display:inline-grid;grid-gap:var(--gap);background:transparent;padding:6px;border-radius:8px}
+    .cell{width:28px;height:28px;border-radius:4px;background:white;border:1px solid #d6dbe6;box-sizing:border-box;cursor:pointer}
+    .info{font-size:13px;margin-top:8px}
+    .legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .swatch{padding:6px 8px;border-radius:6px;border:1px solid #ddd;font-size:12px}
+    footer{margin-top:12px;font-size:12px;color:#555}
+    @media(max-width:900px){.app{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <h1>Grid Interaktif — Luas & Keliling (Warna Resistor)</h1>
+  <div class="app">
+    <div class="panel controls">
+      <strong>Pengaturan Grid</strong>
+      <label>Baris (rows)</label>
+      <input id="rows" type="number" min="1" max="100" value="10">
+      <label>Kolom (cols)</label>
+      <input id="cols" type="number" min="1" max="100" value="10">
+      <label>Ukuran tiap kotak (sisi) — satuan (mis: cm)</label>
+      <div class="row">
+        <input id="cellSize" type="number" min="0.1" step="0.1" value="1">
+        <input id="unitName" type="text" value="cm">
+      </div>
+      <label>Preset ukuran grid</label>
+      <select id="preset">
+        <option value="10x10">10 x 10</option>
+        <option value="5x5">5 x 5</option>
+        <option value="8x8">8 x 8</option>
+        <option value="12x12">12 x 12</option>
+        <option value="16x16">16 x 16</option>
+      </select>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="apply" class="btn">Buat Grid</button>
+        <button id="clear" class="btn secondary">Bersihkan Warna</button>
+      </div>
+
+      <hr style="margin:12px 0">
+      <strong>Pilihan Warna (Resistor)</strong>
+      <div class="legend" id="legend"></div>
+      <div class="info">
+        Klik sebuah kotak untuk mengubah warnanya.
+        <ul>
+          <li>Klik pertama → hitam</li>
+          <li>Klik kedua → coklat</li>
+          <li>dan seterusnya mengikuti urutan warna resistor.</li>
+        </ul>
+      </div>
+
+      <hr style="margin:12px 0">
+      <strong>Penyimpanan</strong>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="save" class="btn">Save (LocalStorage)</button>
+        <button id="load" class="btn secondary">Load</button>
+      </div>
+      <div style="margin-top:8px">
+        <button id="export" class="btn">Export JSON</button>
+        <button id="importBtn" class="btn secondary">Import JSON</button>
+        <input id="importFile" type="file" accept="application/json" style="display:none">
+      </div>
+
+      <hr style="margin:12px 0">
+      <strong>Hasil Perhitungan</strong>
+      <div class="info">
+        <div>Jumlah kotak terwarna: <span id="count">0</span></div>
+        <div>Luas: <span id="area">0</span> <span id="unit">cm²</span></div>
+        <div>Keliling: <span id="perim">0</span> <span id="unit2">cm</span></div>
+      </div>
+      <footer>Tip: atur <em>Ukuran tiap kotak</em> menjadi 1 cm agar jumlah kotak = luas (cm²).</footer>
+    </div>
+
+    <div class="panel grid-wrap">
+      <div>
+        <label>Ukuran tampilan sel (px)</label>
+        <input id="cellPx" type="number" min="12" max="80" value="28">
+      </div>
+      <div id="gridContainer" class="grid" style="overflow:auto;max-height:70vh"></div>
+    </div>
+  </div>
+
+  <script>
+    // Warna resistor (urutan klasik)
+    const resistorColors = [
+      {name:'Black', code:'#000000'},
+      {name:'Brown', code:'#7b3f00'},
+      {name:'Red', code:'#c42b2b'},
+      {name:'Orange', code:'#ff7f2a'},
+      {name:'Yellow', code:'#ffd54a'},
+      {name:'Green', code:'#2e8b57'},
+      {name:'Blue', code:'#2a57c4'},
+      {name:'Violet', code:'#7d3cae'},
+      {name:'Gray', code:'#6e6e6e'},
+      {name:'White', code:'#ffffff'}
+    ];
+
+    const gridContainer = document.getElementById('gridContainer');
+    const rowsInput = document.getElementById('rows');
+    const colsInput = document.getElementById('cols');
+    const applyBtn = document.getElementById('apply');
+    const clearBtn = document.getElementById('clear');
+    const saveBtn = document.getElementById('save');
+    const loadBtn = document.getElementById('load');
+    const exportBtn = document.getElementById('export');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+    const legend = document.getElementById('legend');
+    const countEl = document.getElementById('count');
+    const areaEl = document.getElementById('area');
+    const perimEl = document.getElementById('perim');
+    const unitName = document.getElementById('unitName');
+    const cellSizeInput = document.getElementById('cellSize');
+    const unitSpan = document.getElementById('unit');
+    const unitSpan2 = document.getElementById('unit2');
+    const cellPxInput = document.getElementById('cellPx');
+    const preset = document.getElementById('preset');
+
+    unitSpan.textContent = unitName.value + '²';
+    unitSpan2.textContent = unitName.value;
+
+    // buat legend
+    function renderLegend(){
+      legend.innerHTML = '';
+      resistorColors.forEach((c,i)=>{
+        const el = document.createElement('div');
+        el.className='swatch';
+        el.textContent = (i+1) + '. ' + c.name;
+        el.style.background = c.code;
+        el.style.color = (i===8||i===0) ? '#fff' : '#000';
+        legend.appendChild(el);
+      });
+    }
+    renderLegend();
+
+    // state grid
+    let gridState = {
+      rows: parseInt(rowsInput.value,10),
+      cols: parseInt(colsInput.value,10),
+      cells: [] // akan berisi angka index warna atau -1
+    };
+
+    function makeEmptyCells(r,c){
+      const arr = new Array(r*c).fill(-1);
+      return arr;
+    }
+
+    function buildGrid(r,c,cellPx){
+      gridContainer.innerHTML = '';
+      gridContainer.style.gridTemplateColumns = `repeat(${c}, ${cellPx}px)`;
+      gridContainer.style.gridTemplateRows = `repeat(${r}, ${cellPx}px)`;
+      gridContainer.style.gap = 'var(--gap)';
+      gridState.rows = r; gridState.cols = c;
+      if(!gridState.cells || gridState.cells.length !== r*c) gridState.cells = makeEmptyCells(r,c);
+
+      for(let i=0;i<r*c;i++){
+        const div = document.createElement('div');
+        div.className='cell';
+        div.dataset.index = i;
+        div.dataset.colorIndex = gridState.cells[i];
+        applyCellStyle(div);
+        div.addEventListener('click', onCellClick);
+        gridContainer.appendChild(div);
+      }
+      refreshStats();
+    }
+
+    function applyCellStyle(div){
+      const idx = Number(div.dataset.colorIndex);
+      if(idx >= 0){
+        div.style.background = resistorColors[idx].code;
+        // adjust border / text contrast
+        if(resistorColors[idx].code === '#ffffff') div.style.border = '1px solid #ddd'; else div.style.border = '1px solid rgba(0,0,0,0.12)';
+      } else {
+        div.style.background = 'white';
+        div.style.border = '1px solid #d6dbe6';
+      }
+      // set size
+      const px = Number(cellPxInput.value) || 28;
+      div.style.width = px + 'px';
+      div.style.height = px + 'px';
+    }
+
+    function onCellClick(e){
+      const el = e.currentTarget;
+      const idx = Number(el.dataset.index);
+      let ci = Number(el.dataset.colorIndex);
+      // increment color index (first click -> 0)
+      if(ci === -1) ci = 0; else ci = (ci + 1) % resistorColors.length;
+      el.dataset.colorIndex = ci;
+      gridState.cells[idx] = ci;
+      applyCellStyle(el);
+      refreshStats();
+    }
+
+    function refreshStats(){
+      const cells = gridState.cells;
+      const coloredCount = cells.filter(v=>v>=0).length;
+      countEl.textContent = coloredCount;
+      const cellSide = parseFloat(cellSizeInput.value) || 1;
+      const area = (coloredCount * (cellSide*cellSide));
+      areaEl.textContent = Number.isInteger(area) ? area : area.toFixed(2);
+      unitSpan.textContent = unitName.value + '²';
+      unitSpan2.textContent = unitName.value;
+      // keliling: hitung sisi yang menempel dengan udara
+      const perim = computePerimeter(gridState.rows, gridState.cols, gridState.cells) * (cellSide);
+      perimEl.textContent = Number.isInteger(perim) ? perim : perim.toFixed(2);
+    }
+
+    function computePerimeter(r,c,cells){
+      // setiap sel terisi memiliki 4 sisi, kurangi 2 untuk setiap sisi yang berbatasan dengan sel terisi lainnya
+      let perimCount = 0;
+      for(let row=0;row<r;row++){
+        for(let col=0;col<c;col++){
+          const i = row*c + col;
+          if(cells[i] < 0) continue;
+          // per sisi
+          // up
+          if(row === 0 || cells[(row-1)*c + col] < 0) perimCount++;
+          // down
+          if(row === r-1 || cells[(row+1)*c + col] < 0) perimCount++;
+          // left
+          if(col === 0 || cells[row*c + (col-1)] < 0) perimCount++;
+          // right
+          if(col === c-1 || cells[row*c + (col+1)] < 0) perimCount++;
+        }
+      }
+      return perimCount;
+    }
+
+    // actions
+    applyBtn.addEventListener('click', ()=>{
+      const r = Math.min(100, Math.max(1, Number(rowsInput.value)||10));
+      const c = Math.min(100, Math.max(1, Number(colsInput.value)||10));
+      rowsInput.value = r; colsInput.value = c;
+      gridState.cells = makeEmptyCells(r,c);
+      buildGrid(r,c, Number(cellPxInput.value)||28);
+    });
+
+    preset.addEventListener('change', ()=>{
+      const val = preset.value.split('x');
+      if(val.length===2){ rowsInput.value = Number(val[0]); colsInput.value = Number(val[1]); }
+    });
+
+    clearBtn.addEventListener('click', ()=>{
+      if(!confirm('Bersihkan semua warna dari grid?')) return;
+      gridState.cells = makeEmptyCells(gridState.rows, gridState.cols);
+      buildGrid(gridState.rows, gridState.cols, Number(cellPxInput.value)||28);
+    });
+
+    cellPxInput.addEventListener('change', ()=>{
+      // rebuild quickly maintaining color indexes
+      buildGrid(gridState.rows, gridState.cols, Number(cellPxInput.value)||28);
+      // restore color indexes into dom
+      const nodes = gridContainer.children;
+      for(let i=0;i<nodes.length;i++){
+        nodes[i].dataset.colorIndex = gridState.cells[i];
+        applyCellStyle(nodes[i]);
+      }
+    });
+
+    unitName.addEventListener('input', ()=>{ unitSpan.textContent = unitName.value + '²'; unitSpan2.textContent = unitName.value; });
+    cellSizeInput.addEventListener('change', refreshStats);
+
+    // Save/Load localStorage
+    const STORAGE_KEY = 'grid-luas-keliling-v1';
+    saveBtn.addEventListener('click', ()=>{
+      const payload = {
+        rows: gridState.rows,
+        cols: gridState.cols,
+        cells: gridState.cells,
+        cellSize: Number(cellSizeInput.value)||1,
+        unit: unitName.value
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      alert('Tersimpan ke Local Storage.');
+    });
+
+    loadBtn.addEventListener('click', ()=>{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw){ alert('Tidak ada data tersimpan.'); return; }
+      try{
+        const p = JSON.parse(raw);
+        rowsInput.value = p.rows; colsInput.value = p.cols; cellSizeInput.value = p.cellSize; unitName.value = p.unit;
+        gridState.rows = p.rows; gridState.cols = p.cols; gridState.cells = p.cells;
+        buildGrid(p.rows,p.cols, Number(cellPxInput.value)||28);
+        // restore cells
+        const nodes = gridContainer.children;
+        for(let i=0;i<nodes.length;i++){ nodes[i].dataset.colorIndex = p.cells[i]; applyCellStyle(nodes[i]); }
+        refreshStats();
+        alert('Data dimuat dari Local Storage.');
+      }catch(err){ alert('Gagal memuat data: '+err); }
+    });
+
+    exportBtn.addEventListener('click', ()=>{
+      const payload = {
+        rows: gridState.rows, cols: gridState.cols, cells: gridState.cells,
+        cellSize: Number(cellSizeInput.value)||1, unit: unitName.value
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'grid-export.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    importBtn.addEventListener('click', ()=> importFile.click());
+    importFile.addEventListener('change', (ev)=>{
+      const f = ev.target.files[0]; if(!f) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const p = JSON.parse(reader.result);
+          rowsInput.value = p.rows; colsInput.value = p.cols; cellSizeInput.value = p.cellSize || 1; unitName.value = p.unit || 'cm';
+          gridState.rows = p.rows; gridState.cols = p.cols; gridState.cells = p.cells;
+          buildGrid(p.rows,p.cols, Number(cellPxInput.value)||28);
+          const nodes = gridContainer.children; for(let i=0;i<nodes.length;i++){ nodes[i].dataset.colorIndex = p.cells[i]; applyCellStyle(nodes[i]); }
+          refreshStats();
+          alert('Import sukses');
+        }catch(err){ alert('Import gagal: '+err); }
+      };
+      reader.readAsText(f);
+    });
+
+    // inisialisasi awal
+    buildGrid(gridState.rows, gridState.cols, Number(cellPxInput.value)||28);
+  </script>
+</body>
+</html>
