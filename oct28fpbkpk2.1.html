@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pohon Faktor — KPK & FPB (Drag via Judul)</title>
+<style>
+  :root{
+    --bg:#f8fafc;
+    --card:#ffffff;
+    --muted:#64748b;
+    --text:#0f172a;
+    --edu-1:#06b6d4;
+    --edu-2:#60a5fa;
+    --det-fpb:#0ea5e9;
+    --det-kpk:#f59e0b;
+    --danger:#ef4444;
+    --card-border:#e2e8f0;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#eef2ff 0%,#f8fafc 100%);color:var(--text)}
+  .wrap{max-width:1200px;margin:24px auto;padding:20px;}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  header h1{margin:0;font-size:20px}
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  input[type=number]{padding:8px 10px;border-radius:8px;border:1px solid var(--card-border);width:150px;background:transparent}
+  .btn{padding:8px 12px;border-radius:10px;border:1px solid var(--card-border);background:var(--card);cursor:pointer}
+  .btn.primary{background:linear-gradient(180deg,var(--edu-2),var(--edu-1));color:white;border:none;font-weight:700}
+  .modes{display:flex;gap:6px}
+  .mode-btn{padding:8px 12px;border-radius:999px;border:1px solid var(--card-border);background:transparent;cursor:pointer}
+  .mode-btn.active{box-shadow:0 4px 18px rgba(15,23,42,.08);background:linear-gradient(180deg,#fff,#f1f5f9)}
+
+  .stage{
+    display:flex;
+    flex-direction:row;
+    justify-content:center;
+    align-items:flex-start;
+    gap:20px;
+    margin-top:20px;
+    flex-wrap:nowrap;
+  }
+  .box{
+    flex:1 1 0;
+    max-width:550px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:12px;
+    padding:12px;
+    box-shadow:0 8px 24px rgba(2,6,23,.04);
+    position:relative;
+    user-select:none;
+  }
+  .title{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;
+    cursor:grab;
+    -webkit-user-select:none;
+    user-select:none;
+    touch-action:none;
+  }
+  .title:active{cursor:grabbing;}
+  .title h3{margin:0;font-size:15px}
+  .svgwrap{background:linear-gradient(180deg,#fcfeff,#f8fafc);border-radius:8px;padding:8px;border:1px dashed #e6eef6}
+  svg{width:100%;height:380px;display:block;background:transparent}
+  .edge{stroke:#cbd5e1;stroke-width:2}
+  .node circle{fill:#ffffff;stroke:#94a3b8;stroke-width:2}
+  .node text{font-weight:700;font-size:13px;fill:var(--text);text-anchor:middle;dominant-baseline:middle}
+  .node.prime circle{fill:#f1f5f9}
+  .node.det{filter:drop-shadow(0 4px 8px rgba(0,0,0,.06))}
+  .node.det circle{stroke-width:3}
+  .small{font-size:13px;color:var(--muted)}
+  #results{margin-top:14px;display:flex;gap:12px;flex-wrap:wrap}
+  .panel{flex:1;min-width:260px;background:#ffffff;border:1px solid var(--card-border);padding:12px;border-radius:10px}
+  .panel h4{margin:0 0 8px 0}
+  .pembahasan{color:var(--danger);line-height:1.4}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .chip{padding:6px 10px;border-radius:999px;background:#f1f5f9;border:1px solid var(--card-border);cursor:pointer;font-size:13px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>🧮 Pohon Faktor — Mode KPK & FPB (Drag via Judul)</h1>
+      <div class="toolbar">
+        <div class="modes">
+          <button id="modeFPB" class="mode-btn">Mode FPB</button>
+          <button id="modeKPK" class="mode-btn">Mode KPK</button>
+        </div>
+        <input id="inpA" type="number" min="2" placeholder="Bilangan A (mis: 24)" />
+        <input id="inpB" type="number" min="2" placeholder="Bilangan B (mis: 36)" />
+        <button id="drawAll" class="btn primary">Gambar Semua</button>
+        <button id="calcBtn" class="btn">Hitung</button>
+      </div>
+    </header>
+
+    <div class="chips">
+      <div class="chip" data-a="24" data-b="36">24 & 36</div>
+      <div class="chip" data-a="30" data-b="45">30 & 45</div>
+      <div class="chip" data-a="60" data-b="84">60 & 84</div>
+      <div class="chip" data-a="96" data-b="40">96 & 40</div>
+    </div>
+
+    <div class="stage">
+      <div class="box" id="boxA">
+        <div class="title"><h3>Bilangan A</h3><div class="small">Nilai: <strong id="valA">—</strong></div></div>
+        <div class="svgwrap"><svg id="svgA" viewBox="0 0 800 600"></svg></div>
+      </div>
+      <div class="box" id="boxB">
+        <div class="title"><h3>Bilangan B</h3><div class="small">Nilai: <strong id="valB">—</strong></div></div>
+        <div class="svgwrap"><svg id="svgB" viewBox="0 0 800 600"></svg></div>
+      </div>
+    </div>
+
+    <div id="results">
+      <div class="panel"><h4>Faktorisasi Prima</h4><div id="factA">A: —</div><div id="factB">B: —</div></div>
+      <div class="panel"><h4>Hasil</h4><div id="resFPB">FPB: —</div><div id="resKPK">KPK: —</div></div>
+      <div class="panel"><h4>Pembahasan</h4><div id="pembahasan" class="pembahasan">Pilih mode, masukkan bilangan, lalu klik Hitung.</div></div>
+    </div>
+  </div>
+
+<script>
+const $=s=>document.querySelector(s);const $$=s=>Array.from(document.querySelectorAll(s));
+function isPrime(n){if(n<2)return false;if(n%2===0)return n===2;if(n%3===0)return n===3;let i=5,w=2;while(i*i<=n){if(n%i===0)return false;i+=w;w=6-w;}return true;}
+function smallestFactor(n){if(n%2===0)return 2;if(n%3===0)return 3;let i=5,w=2;while(i*i<=n){if(n%i===0)return i;i+=w;w=6-w;}return n;}
+function primeFactorsMap(n){const r={};let x=n,d=2;while(x>1&&d*d<=x){while(x%d===0){r[d]=(r[d]||0)+1;x/=d;}d=d===2?3:d+2;}if(x>1)r[x]=(r[x]||0)+1;return r;}
+function buildTree(n){n=Math.floor(Math.abs(n));if(n<2||isPrime(n))return{value:n,prime:n>=2,children:[]};const f=smallestFactor(n);const o=n/f;return{value:n,prime:false,children:[buildTree(f),buildTree(o)]};}
+function measure(n){if(!n.children.length){n._w=1;n._h=1;return n;}n.children.forEach(measure);n._w=n.children.reduce((a,c)=>a+c._w,0);n._h=1+Math.max(...n.children.map(c=>c._h));return n;}
+function layout(n,x0,y0,xU,yS){n.x=x0+(n._w*xU)/2;n.y=y0;let curX=x0;for(const c of n.children){layout(c,curX,y0+yS,xU,yS);curX+=c._w*xU;}}
+function drawTree(svg,num){while(svg.firstChild)svg.removeChild(svg.firstChild);const root=measure(buildTree(num));const w=Math.max(600,root._w*100+80),h=Math.max(360,root._h*100+80);svg.setAttribute('viewBox',`0 0 ${w} ${h}`);layout(root,40,40,100,110);
+(function drawEdges(n){for(const c of n.children){const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('class','edge');l.setAttribute('x1',n.x);l.setAttribute('y1',n.y+20);l.setAttribute('x2',c.x);l.setAttribute('y2',c.y-20);svg.appendChild(l);drawEdges(c);}})(root);
+const leaves=[];(function drawNodes(n){const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('class','node'+(n.prime?' prime':''));g.dataset.value=n.value;const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',n.x);c.setAttribute('cy',n.y);c.setAttribute('r',20);g.appendChild(c);
+const t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',n.x);t.setAttribute('y',n.y+1);t.textContent=n.value;g.appendChild(t);svg.appendChild(g);if(n.prime)leaves.push(g);for(const ch of n.children)drawNodes(ch);})(root);return leaves;}
+function highlightLeaves(leaves,map,color){leaves.forEach(g=>{g.classList.remove('det');g.querySelector('circle').removeAttribute('stroke');});const lists={};leaves.forEach(g=>{const v=Number(g.dataset.value);(lists[v]=lists[v]||[]).push(g);});Object.entries(map).forEach(([p,c])=>{const arr=lists[p]||[];for(let i=0;i<Math.min(c,arr.length);i++){const g=arr[i];g.classList.add('det');g.querySelector('circle').setAttribute('stroke',color);}});}
+function formatPrimeMap(m){return Object.entries(m).map(([p,e])=>`${p}<sup>${e}</sup>`).join(' × ')||'—';}
+let mode='FPB',lastA=null,lastB=null,leavesA=[],leavesB=[];
+function setMode(m){mode=m;$('#modeFPB').classList.toggle('active',m==='FPB');$('#modeKPK').classList.toggle('active',m==='KPK');}
+function drawA(){const n=+$('#inpA').value;if(n<2)return alert('Masukkan bilangan A ≥2');lastA=n;$('#valA').textContent=n;leavesA=drawTree($('#svgA'),n);$('#factA').innerHTML=`A: ${n} = ${formatPrimeMap(primeFactorsMap(n))}`;}
+function drawB(){const n=+$('#inpB').value;if(n<2)return alert('Masukkan bilangan B ≥2');lastB=n;$('#valB').textContent=n;leavesB=drawTree($('#svgB'),n);$('#factB').innerHTML=`B: ${n} = ${formatPrimeMap(primeFactorsMap(n))}`;}
+function drawAll(){if($('#inpA').value)drawA();if($('#inpB').value)drawB();}
+function calculate(){if(!lastA||!lastB)return alert('Gambar dulu kedua pohon.');const fa=primeFactorsMap(lastA),fb=primeFactorsMap(lastB),primes=[...new Set([...Object.keys(fa),...Object.keys(fb)])].map(Number);
+let fpb=1,kpk=1,fpbMap={},kpkMap={};primes.forEach(p=>{const ea=fa[p]||0,eb=fb[p]||0,mn=Math.min(ea,eb),mx=Math.max(ea,eb);if(mn>0){fpb*=p**mn;fpbMap[p]=mn;}if(mx>0){kpk*=p**mx;kpkMap[p]=mx;}});
+$('#resFPB').innerHTML=`FPB: <strong>${fpb}</strong> — faktor: ${formatPrimeMap(fpbMap)}`;$('#resKPK').innerHTML=`KPK: <strong>${kpk}</strong> — faktor: ${formatPrimeMap(kpkMap)}`;
+const fpbColor=getComputedStyle(document.documentElement).getPropertyValue('--det-fpb'),kpkColor=getComputedStyle(document.documentElement).getPropertyValue('--det-kpk');
+if(mode==='FPB'){highlightLeaves(leavesA,fpbMap,fpbColor);highlightLeaves(leavesB,fpbMap,fpbColor);}else{highlightLeaves(leavesA,kpkMap,kpkColor);highlightLeaves(leavesB,kpkMap,kpkColor);}
+let pemb='';if(mode==='FPB'){pemb+=`<p><strong>Mode FPB aktif.</strong> Ambil faktor prima yang sama dengan pangkat <em>terkecil</em>.</p>`;pemb+=`<p>FPB = ${formatPrimeMap(fpbMap)} = <strong>${fpb}</strong></p>`;}else{pemb+=`<p><strong>Mode KPK aktif.</strong> Ambil semua faktor prima dengan pangkat <em>terbesar</em>.</p>`;pemb+=`<p>KPK = ${formatPrimeMap(kpkMap)} = <strong>${kpk}</strong></p>`;}
+$('#pembahasan').innerHTML=pemb;}
+$('#modeFPB').onclick=()=>setMode('FPB');$('#modeKPK').onclick=()=>setMode('KPK');
+$('#drawAll').onclick=drawAll;$('#calcBtn').onclick=calculate;
+$$('.chip').forEach(c=>c.onclick=()=>{$('#inpA').value=c.dataset.a;$('#inpB').value=c.dataset.b;drawAll();});
+
+function makeDraggable(box){
+  const header = box.querySelector('.title');
+  let dragging=false,startX,startY,origX=0,origY=0;
+  header.addEventListener('pointerdown',e=>{
+    dragging=true;
+    startX=e.clientX;startY=e.clientY;
+    box.setPointerCapture(e.pointerId);
+    const tr=box.style.transform||'';
+    const m=tr.match(/translate\((-?\d+(?:\.\d+)?)px,\s*(-?\d+(?:\.\d+)?)px\)/);
+    origX=m?parseFloat(m[1]):0;
+    origY=m?parseFloat(m[2]):0;
+  });
+  box.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+    const dx=e.clientX-startX,dy=e.clientY-startY;
+    box.style.transform=`translate(${origX+dx}px,${origY+dy}px)`;
+  });
+  box.addEventListener('pointerup',e=>{
+    dragging=false;
+    box.releasePointerCapture(e.pointerId);
+  });
+}
+makeDraggable($('#boxA'));
+makeDraggable($('#boxB'));
+setMode('FPB');
+</script>
+</body>
+</html>
+
