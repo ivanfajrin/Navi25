@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>💂‍♂️ Formasi Pasukan Depan Penuh</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #002b5c, #000814);
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #ffcc00;
+    }
+    .controls {
+      margin: 20px 0;
+    }
+    input {
+      padding: 6px;
+      border-radius: 6px;
+      border: none;
+      text-align: center;
+      width: 80px;
+    }
+    button {
+      padding: 8px 15px;
+      background: #ffcc00;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #ffd633;
+    }
+    .formasi {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin-top: 30px;
+    }
+    .baris {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      font-size: 28px;
+    }
+    .baris span:hover {
+      transform: scale(1.2);
+    }
+    .komandan {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+    .info {
+      margin-top: 20px;
+      color: #ff9999;
+    }
+  </style>
+</head>
+<body>
+  <h1>💂‍♂️ Formasi Pasukan – Barisan Depan Penuh 💂‍♂️</h1>
+
+  <div class="controls">
+    <label>Jumlah Tentara:</label>
+    <input type="number" id="tentara" value="68" min="1">
+    <label>Jumlah Barisan:</label>
+    <input type="number" id="barisan" value="5" min="1">
+    <button onclick="bagiPasukan()">Bagi!</button>
+  </div>
+
+  <div id="hasil"></div>
+
+  <script>
+    function bagiPasukan() {
+      const total = parseInt(document.getElementById('tentara').value);
+      const baris = parseInt(document.getElementById('barisan').value);
+      const hasilDiv = document.getElementById('hasil');
+      hasilDiv.innerHTML = "";
+
+      // Tentara tidak termasuk komandan
+      const formasi = document.createElement('div');
+      formasi.className = 'formasi';
+
+      // Tambahkan komandan di depan
+      const komandan = document.createElement('div');
+      komandan.className = 'komandan';
+      komandan.textContent = '💂‍♂️';
+      formasi.appendChild(komandan);
+
+      // Hitung banyak baris yang dibutuhkan
+      const panjangBarisan = baris; // jumlah kolom
+      const jumlahBaris = Math.ceil(total / panjangBarisan);
+
+      let sisaTentara = total;
+
+      for (let i = 0; i < jumlahBaris; i++) {
+        const satuBaris = document.createElement('div');
+        satuBaris.className = 'baris';
+
+        // Kalau sisa lebih dari jumlah barisan → isi penuh
+        const isi = sisaTentara >= panjangBarisan ? panjangBarisan : sisaTentara;
+
+        for (let j = 0; j < isi; j++) {
+          const emoji = document.createElement('span');
+          emoji.textContent = "💂‍♂️";
+          satuBaris.appendChild(emoji);
+        }
+
+        formasi.appendChild(satuBaris);
+        sisaTentara -= isi;
+      }
+
+      hasilDiv.appendChild(formasi);
+
+      const info = document.createElement('div');
+      info.className = 'info';
+      info.innerHTML = `
+        <strong>Total:</strong> ${total} tentara → ${baris} barisan (kolom).<br>
+        Komandan di depan tidak ikut pembagian.<br>
+        Barisan depan selalu penuh terlebih dahulu.<br>
+        Total baris tersusun: ${jumlahBaris}.
+      `;
+      hasilDiv.appendChild(info);
+    }
+
+    bagiPasukan();
+  </script>
+</body>
+</html>
